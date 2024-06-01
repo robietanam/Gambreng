@@ -8,6 +8,7 @@ import { File } from "@prisma/client";
 import { getCookie, setCookie } from "cookies-next";
 import { useEffect, useState, FormEvent } from "react";
 import Link from "next/link";
+import { IoRefresh } from "react-icons/io5";
 
 export default function Home() {
   var userIdCookie = getCookie("userId");
@@ -170,6 +171,13 @@ export default function Home() {
 
       <div className="col-span-5 bg-green-100">
         <div className="flex flex-row">
+          <button
+            type="button"
+            className="text-red-600 border-red-800  hover:text-white hover:bg-red-400 w-fit h-fit p-2 rounded-md border "
+            onClick={() => getUserInfo(userId)}
+          >
+            <IoRefresh />
+          </button>
           <div className="relative flex flex-1 flex-shrink-0">
             <label htmlFor="search" className="sr-only">
               Search

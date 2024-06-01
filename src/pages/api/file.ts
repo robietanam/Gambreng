@@ -16,7 +16,6 @@ export default async function handler(
     case "POST":  
       const id = uuidv4()
       
-      console.log(data)
       const newFile = await prisma.file.create({
         data: {
           fileName: data.fileName,
@@ -34,7 +33,6 @@ export default async function handler(
       break
 
     case "GET":  
-      console.log(query)
       const file = await prisma.file.findUnique({
         where: {    
           id: query.fileId,
@@ -44,8 +42,23 @@ export default async function handler(
         }
       })
       
-      console.log(file)
       res.status(200).json(file)
+      break
+    
+    case "PUT":
+      const fileUpdate = await prisma.file.update({
+        where: {    
+          id: data.fileId,
+          user: { some: { id : data.userId}}
+        },
+        data : {
+          user : {
+            connect: {id : data.newUserId}
+          }
+        }
+      })
+      
+      res.status(200).json(fileUpdate)
       break
     
     default:

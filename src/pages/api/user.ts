@@ -20,11 +20,17 @@ export default async function handler(
     case "POST":  
       const id = uuidv4()
 
-      const newUser = await prisma.user.create({
-        data: {
+      const newUser = await prisma.user.upsert({
+        where: {
+          name: data.username
+        }, 
+        update: {
+        },
+        create: {
+          
           name: data.username,
           id: id,
-        },
+        }
       })
       res.status(200).json(newUser)
       break

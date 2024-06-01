@@ -44,7 +44,9 @@ export default function handler(
     })
 
     socket.on('mousemove', (state) => {
-      console.log(state)
+
+      io.to(state.fileId).emit('user-state-from-server', state.data);
+      // console.log(state)
     })
 
     socket.on('user-state',  (state) => {
@@ -58,17 +60,9 @@ export default function handler(
       socket.to(state.fileInfo.id).emit('draw-line', state.data)
     })
 
-    socket.on('clear', () => io.to("!").emit('clear'))
+    socket.on('clear', (state) => io.to(state.fileInfo.id).emit('clear'))
 
-    socket.on('join-room', (userId) => {
-      socket.broadcast.emit('user-connected', userId)
 
-      socket.on('disconnect', () => {
-        socket.broadcast.emit('user-disconnected', userId)
-      })
-    })
-
-    
     })
   }
   

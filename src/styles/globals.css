@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+.mousePosition {
+  @apply w-5 h-5 absolute pointer-events-none opacity-60 -ml-2.5 -mt-2.5 rounded-[3px] border-[white] border-[3px] border-solid;
+}
+
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
