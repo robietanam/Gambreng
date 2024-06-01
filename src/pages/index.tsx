@@ -1,118 +1,202 @@
-import Image from "next/image";
-import { Inter } from "next/font/google";
+"use client";
 
-const inter = Inter({ subsets: ["latin"] });
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useDebouncedCallback } from "use-debounce";
+
+import { FaSearch } from "react-icons/fa";
+import { File } from "@prisma/client";
+import { getCookie, setCookie } from "cookies-next";
+import { useEffect, useState, FormEvent } from "react";
+import Link from "next/link";
 
 export default function Home() {
+  var userIdCookie = getCookie("userId");
+  var usernameCookie = getCookie("username");
+  const [userId, setUserId] = useState(userIdCookie ?? "");
+  const [username, setUsername] = useState(usernameCookie ?? "");
+  const [userFiles, setUserFiles] = useState([]);
+
+  useEffect(() => {
+    if (!userId && !username) {
+      showUserModal();
+    } else {
+      getUserInfo(userId);
+    }
+  }, []);
+
+  function showUserModal() {
+    document.getElementById("username_modal").showModal();
+  }
+
+  async function getUserInfo(userId: String, search?: String) {
+    const response = await fetch(
+      "/api/user?userId=" + userId + "&search=" + search,
+      {
+        method: "GET",
+      }
+    );
+
+    // Handle response if necessary
+    const data = await response.json();
+    setUserFiles(data.File);
+  }
+
+  async function onUsername(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+
+    if (userId == null)
+      return document.getElementById("username_modal").showModal();
+
+    const response = await fetch("/api/user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: formData.get("username"),
+      }),
+    });
+
+    const data = await response.json();
+
+    setCookie("username", data.name);
+    setCookie("userId", data.id);
+
+    setUserId(data.id);
+    setUsername(data.name);
+
+    document.getElementById("username_modal").close();
+    // ...
+  }
+
+  async function onFileCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (userId == null || username == null) return;
+
+    const formData = new FormData(event.currentTarget);
+
+    const response = await fetch("/api/file", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        fileName: formData.get("filename"),
+        userName: username,
+        userId: userId,
+      }),
+    });
+
+    getUserInfo(userId);
+  }
+
+  const searchParams = useSearchParams();
+  const { replace } = useRouter();
+  const pathname = usePathname();
+
+  const handleSearch = useDebouncedCallback((term) => {
+    console.log(`Searching... ${term}`);
+    getUserInfo(userId, term);
+    const params = new URLSearchParams(searchParams);
+
+    if (term) {
+      params.set("search", term);
+    } else {
+      params.delete("search");
+    }
+    replace(`${pathname}?${params.toString()}`);
+  }, 300);
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+    <div className="bg-white min-w-full min-h-screen overflow-hidden grid grid-cols-7">
+      <dialog id="username_modal" className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Hello!</h3>
+          <p className="py-4">Masukkan Username anda</p>
+
+          <form onSubmit={onUsername}>
+            <input
+              type="text"
+              placeholder="Username"
+              name="username"
+              className="input input-bordered input-sm w-full"
             />
-          </a>
+            <div className="modal-action">
+              {/* if there is a button in form, it will close the modal */}
+              <button className="btn" type="submit">
+                Simpan
+              </button>
+            </div>
+          </form>
+        </div>
+      </dialog>
+
+      <div className=" col-span-2 bg-red-100 flex flex-col justify-end px-1 py-10">
+        <div className="col-span-2 bg-red-100 flex flex-row justify-center px-1 py-10 gap-2">
+          <div className="flex flex-col gap-2">
+            <p className="bg-white p-2 rounded-md text-sm"> username</p>
+            <p className=" bg-white p-2 rounded-md text-sm"> userId</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="bg-white p-2 rounded-md text-sm"> {username}</p>
+            <p className=" bg-white p-2 rounded-md text-sm"> {userId}</p>
+            <button
+              className="btn btn-sm w-full"
+              type="submit"
+              onClick={() => navigator.clipboard.writeText(userId)}
+            >
+              Copy Clipboard
+            </button>
+          </div>
+        </div>
+        <form
+          onSubmit={onFileCreate}
+          className=" bg-white px-2 py-5  rounded-lg flex flex-col w-full gap-2 "
+        >
+          <input
+            type="text"
+            placeholder="Nama file..."
+            name="filename"
+            className="input input-bordered input-sm max-w-full"
+          />
+          <button className="btn btn-sm w-full" type="submit">
+            Buat file
+          </button>
+        </form>
+      </div>
+
+      <div className="col-span-5 bg-green-100">
+        <div className="flex flex-row">
+          <div className="relative flex flex-1 flex-shrink-0">
+            <label htmlFor="search" className="sr-only">
+              Search
+            </label>
+            <input
+              className="peer block w-full rounded-md border border-gray-200 py-[9px] pl-10 text-sm outline-2 placeholder:text-gray-500"
+              placeholder="Search file.."
+              onChange={(e) => {
+                handleSearch(e.target.value);
+              }}
+              defaultValue={searchParams.get("search")?.toString()}
+            />
+            <FaSearch className="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
+          </div>
+        </div>
+        <div className="px-2 py-5   flex flex-col w-full gap-2 overflow-y-scroll">
+          {userFiles?.map((data: File) => (
+            <Link
+              className="bg-white rounded-lg py-2 px-3 hover:bg-gray-100 flex flex-row justify-between"
+              key={data.id}
+              href={`/draw?fileId=${data.id}`}
+            >
+              {data.fileName}
+            </Link>
+          ))}
         </div>
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   );
 }
