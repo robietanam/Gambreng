@@ -23,7 +23,7 @@ export default function Home() {
     } else {
       getUserInfo(userId);
     }
-  }, []);
+  }, [userId, username]);
 
   function showUserModal() {
     document.getElementById("username_modal").showModal();

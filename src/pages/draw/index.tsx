@@ -59,7 +59,6 @@ export default function Home() {
 
   useEffect(() => {
     if (fileInfo.fileName) {
-      console.log("KONTOL1");
       // socket = io("http://localhost:3001");
       fetch("/api/socket?fileId=" + fileInfo.id);
       socket = io();
@@ -139,7 +138,6 @@ export default function Home() {
 
       socket.on("clear", clear);
       return () => {
-        console.log("KONTOL2");
         socket.removeAllListeners("draw-line");
         socket.removeAllListeners("get-canvas-state");
         socket.removeAllListeners("canvas-state-from-server");
@@ -214,7 +212,7 @@ export default function Home() {
   function createLine({ prevPoint, currentPoint, ctx }: Draw) {
     if (socket == null) return;
     socket.emit("draw-line", {
-      fileInfo,
+      fileId: fileInfo.id,
       data: { prevPoint, currentPoint, color },
     });
     drawLine({ prevPoint, currentPoint, ctx, color });
@@ -309,7 +307,7 @@ export default function Home() {
         </div>
       </dialog>
 
-      <div className="sticky w-fit top-5 left-5 flex flex-col gap-2  z-10 ">
+      <div className="sticky w-fit top-5 left-5 flex flex-col gap-2 z-10 bg-gray-200 rounded-md p-4">
         <div className=" flex flex-row justify-start  gap-2 pb-2">
           <input
             type="text"
@@ -327,7 +325,7 @@ export default function Home() {
             setColor(e.hex);
           }}
         />
-        <div className="flex flex-row gap-3">
+        <div className="flex flex-row gap-3  w-fit">
           <button
             type="button"
             className="text-red-600 border-red-800  hover:text-white hover:bg-red-400 w-fit h-fit p-2 rounded-md border "
@@ -348,7 +346,7 @@ export default function Home() {
             <IoText />
           </button>
         </div>
-        <div className="flex flex-row gap-2">
+        <div className="flex flex-row gap-2  w-fit">
           <div className="rounded-lg bg-gray-400 py-1 px-5 w-fit"> Users </div>
           <button
             type="button"
@@ -360,7 +358,7 @@ export default function Home() {
             <IoAdd />
           </button>
         </div>
-        <div className="flex flex-row gap-3">
+        <div className="flex flex-row gap-3  w-fit">
           {fileInfo.user?.map((user) => (
             <div
               key={user.id}

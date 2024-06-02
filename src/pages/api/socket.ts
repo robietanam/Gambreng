@@ -45,19 +45,19 @@ export default function handler(
 
     socket.on('mousemove', (state) => {
 
-      io.to(state.fileId).emit('user-state-from-server', state.data);
+      socket.to(state.fileId).emit('user-state-from-server', state.data);
       // console.log(state)
     })
 
-    socket.on('user-state',  (state) => {
-      // console.log(`received canvas state ${state}`)
-      socket.to(state.fileInfo.id).emit('user-state-from-server', state.data)
-    })
+    // socket.on('user-state',  (state) => {
+    //   // console.log(`received canvas state ${state}`)
+    //   socket.to(state.fileInfo.id).emit('user-state-from-server', state.data)
+    // })
 
     socket.on('draw-line', (state) => {
       
       console.log(`received canvas line ${state.data.prevPoint?.x} ${state.data.currentPoint.x} ${state.data.color}`)
-      socket.to(state.fileInfo.id).emit('draw-line', state.data)
+      socket.to(state.fileId).emit('draw-line', state.data)
     })
 
     socket.on('clear', (state) => io.to(state.fileInfo.id).emit('clear'))
