@@ -20,7 +20,7 @@ Gambreng adalah aplikasi berbasis website yang memungkinkan kamu menggambar dan 
 
 Setup .env
 
-- tambahkan pada .
+- tambahkan pada .env
 
 ```sh
 DATABASE_URL="mysql://[username]:[pass]@[hostdb]:[portdb]/[nama_table]"
