@@ -4,7 +4,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
 
 import { FaSearch } from "react-icons/fa";
-import { File } from "@prisma/client";
 import { getCookie, setCookie } from "cookies-next";
 import { useEffect, useState, FormEvent } from "react";
 import Link from "next/link";

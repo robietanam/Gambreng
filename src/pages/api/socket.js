@@ -42,7 +42,7 @@ export default function handler(
     socket.on('mousemove', (state) => {
 
       // socket.to(state.fileId).emit('user-state-from-server', state.data);
-      socket.emit('user-state-from-server', state.data);
+      socket.to(state.fileId).emit('user-state-from-server', state.data);
       // console.log(state)
     })
 

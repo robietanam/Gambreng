@@ -4,7 +4,7 @@ import rough from "roughjs";
 import getStroke from "perfect-freehand";
 import { io } from "socket.io-client";
 import { getCookie, setCookie } from "cookies-next";
-import { isEmpty } from "lodash";
+import { throttle, isEmpty } from "lodash";
 
 import { TwitterPicker } from "react-color";
 import {
@@ -299,6 +299,8 @@ const usePressedKeys = () => {
 const App = () => {
   const searchParams = useSearchParams();
   const coockieUserId = getCookie("userId");
+
+  const coockieUsername = getCookie("username");
   const paramFileId = searchParams.get("fileId");
 
   const size = useWindowSize();
@@ -405,14 +407,84 @@ const App = () => {
 
       socket.emit("req-canvas-state", { fileId: fileInfo.id });
 
+      socket.on("user-state-from-server", (state) => {
+        moveCursorToPosition(state);
+      });
+
+      document
+        .getElementById("draw-canvas")
+        .addEventListener("mousemove", handleMouseMove);
+
+      var sendMousePosition_throttled = throttle(sendMousePosition, 50);
+
+      function handleMouseMove(event) {
+        sendMousePosition_throttled(event);
+      }
+
+      function sendMousePosition(event) {
+        socket.emit("mousemove", {
+          fileId: fileInfo.id,
+          data: {
+            userId: userId,
+            name: coockieUsername,
+            x: event.clientX,
+            y: event.clientY,
+            x_pct: ((event.layerX / event.view.screen.width) * 100).toFixed(3),
+            y_pct: ((event.layerY / event.view.screen.height) * 100).toFixed(3),
+          },
+        });
+      }
+
       return () => {
+        document
+          .getElementById("draw-canvas")
+          .removeEventListener("mousemove", handleMouseMove);
         socket.removeAllListeners("get-canvas-state");
+        socket.removeAllListeners("user-state-from-server");
         socket.removeAllListeners("canvas-state-from-server");
         socket.removeAllListeners("canvas-state-from-server-update");
         socket.disconnect();
       };
     }
   }, [fileInfo.fileName]);
+
+  function moveCursorToPosition(data) {
+    //Create a div, if it doesn't already exist for this
+    if (!document.getElementById("mousePosition-" + data.userId)) {
+      var element = document.createElement("div");
+      //Set ID, class and style (color based on hash of string)
+      element.setAttribute("id", "mousePosition-" + data.userId);
+      element.setAttribute("class", "mousePosition");
+      element.style.backgroundColor = "#" + intToRGB(hashCode(data.userId));
+      //Add to document
+
+      document.getElementById("draw-canvas").appendChild(element);
+    }
+
+    //Move into position
+    element = document.getElementById("mousePosition-" + data.userId);
+
+    if (data.userId != userId) {
+      element.innerHTML = `<p> ${data.name}</p>`;
+    }
+    element.style.backgroundColor = data.color;
+    element.style.left = data.x + "px";
+    element.style.top = data.y + "px";
+  }
+
+  //Helper functions for setting a color from a string
+  function hashCode(str) {
+    var hash = 0;
+    for (var i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return hash;
+  }
+
+  function intToRGB(i) {
+    var c = (i & 0x00ffffff).toString(16).toUpperCase();
+    return "00000".substring(0, 6 - c.length) + c;
+  }
 
   useEffect(() => {
     socket?.on("get-canvas-state", () => {
