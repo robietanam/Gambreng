@@ -32,7 +32,7 @@ contoh
 DATABASE_URL="mysql://canvas-pemrojar:123@localhost:3306/canvas_pemrojar"
 ```
 
-Menjalankan program
+Setup Program
 
 ```sh
 npm install
